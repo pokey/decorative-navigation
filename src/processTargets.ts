@@ -1,4 +1,4 @@
-import { concat, zip } from "lodash";
+import { concat, range, zip } from "lodash";
 import update from "immutability-helper";
 import { SyntaxNode } from "web-tree-sitter";
 import * as vscode from "vscode";
@@ -196,7 +196,7 @@ function transformSelection(
       throw new Error(`Couldn't find containing ${transformation.scopeType}`);
     case "subpiece":
       const token = selection.editor.document.getText(selection.selection);
-      const pieces: { start: number; end: number }[] = [];
+      let pieces: { start: number; end: number }[] = [];
 
       if (transformation.pieceType === "subtoken") {
         const matches = token.matchAll(SUBWORD_MATCHER);
@@ -207,20 +207,24 @@ function transformSelection(
           });
         }
       } else if (transformation.pieceType === "character") {
-        const characters = token.split("");
-        for (let index = 0; index < characters.length; index++) {
-          pieces.push({ start: index, end: index + 1 });
-        }
+        pieces = range(token.length).map((index) => ({
+          start: index,
+          end: index + 1,
+        }));
       }
 
       // NB: We use the modulo here to handle negative offsets
-      let endIndex =
+      const endIndex =
         transformation.endIndex == null
           ? pieces.length
-          : (transformation.endIndex + pieces.length) % pieces.length;
-      endIndex = endIndex === 0 ? pieces.length : endIndex;
+          : transformation.endIndex <= 0
+          ? transformation.endIndex + pieces.length
+          : transformation.endIndex;
+
       const startIndex =
-        (transformation.startIndex + pieces.length) % pieces.length;
+        transformation.startIndex < 0
+          ? transformation.startIndex + pieces.length
+          : transformation.startIndex;
 
       const start = selection.selection.start.translate(
         undefined,
