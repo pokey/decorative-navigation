@@ -18,6 +18,7 @@ import { Bring, Move, Swap } from "./BringMoveSwap";
 class Actions implements ActionRecord {
   constructor(private graph: Graph) {}
 
+  bring = new Bring(this.graph);
   clear = new Clear(this.graph);
   copy = new Copy(this.graph);
   cut = new Cut(this.graph);
@@ -40,7 +41,6 @@ class Actions implements ActionRecord {
   setSelectionAfter = new SetSelectionAfter(this.graph);
   setSelectionBefore = new SetSelectionBefore(this.graph);
   swap = new Swap(this.graph);
-  use = new Bring(this.graph);
   unfold = new Unfold(this.graph);
   wrap = new Wrap(this.graph);
 }

@@ -223,6 +223,7 @@ export interface Action {
 }
 
 export type ActionType =
+  | "bring"
   | "clear"
   | "copy"
   | "cut"
@@ -240,7 +241,6 @@ export type ActionType =
   | "setSelectionAfter"
   | "setSelectionBefore"
   | "swap"
-  | "use"
   | "unfold"
   | "wrap";
 
