@@ -13,7 +13,7 @@ import {
 } from "./setSelection";
 import Wrap from "./wrap";
 import { ScrollToTop, ScrollToCenter, ScrollToBottom } from "./Scroll";
-import { Use, Move, Swap } from "./UseMoveSwap";
+import { Bring, Move, Swap } from "./BringMoveSwap";
 
 class Actions implements ActionRecord {
   constructor(private graph: Graph) {}
@@ -40,7 +40,7 @@ class Actions implements ActionRecord {
   setSelectionAfter = new SetSelectionAfter(this.graph);
   setSelectionBefore = new SetSelectionBefore(this.graph);
   swap = new Swap(this.graph);
-  use = new Use(this.graph);
+  use = new Bring(this.graph);
   unfold = new Unfold(this.graph);
   wrap = new Wrap(this.graph);
 }

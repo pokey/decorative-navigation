@@ -27,17 +27,24 @@ interface Edit {
   originalSelection: TypedSelection;
 }
 
-class Base implements Action {
+interface ThatMarkEntry {
+  editor: TextEditor;
+  targetsIndex: number;
+  typedSelection: TypedSelection;
+  selection: Selection;
+}
+
+class BringMoveSwap implements Action {
   targetPreferences: ActionPreferences[] = [
     { insideOutsideType: "inside" },
-    { position: "after", insideOutsideType: "outside" },
+    { insideOutsideType: "inside" },
   ];
 
   constructor(private graph: Graph, private type: string) {
     this.run = this.run.bind(this);
   }
 
-  private expandSources(
+  private broadcastSource(
     sources: TypedSelection[],
     destinations: TypedSelection[]
   ) {
@@ -118,7 +125,7 @@ class Base implements Action {
               destination.selection.selection
             );
           }
-          
+
           usedSources.push(source);
           result.push({
             editor: source.selection.editor,
@@ -152,7 +159,7 @@ class Base implements Action {
     );
   }
 
-  private async getThatMark(edits: Edit[]) {
+  private async getThatMark(edits: Edit[]): Promise<ThatMarkEntry[]> {
     // Only swap has source as a that mark
     if (this.type !== "swap") {
       edits = edits.filter(({ targetsIndex }) => targetsIndex === 0);
@@ -201,7 +208,7 @@ class Base implements Action {
     );
   }
 
-  private async decorateThatMark(thatMark: any[]) {
+  private async decorateThatMark(thatMark: ThatMarkEntry[]) {
     return Promise.all([
       displayPendingEditDecorations(
         thatMark
@@ -224,7 +231,7 @@ class Base implements Action {
     TypedSelection[],
     TypedSelection[]
   ]): Promise<ActionReturnValue> {
-    sources = this.expandSources(sources, destinations);
+    sources = this.broadcastSource(sources, destinations);
 
     await this.decorateTargets(sources, destinations);
 
@@ -240,20 +247,20 @@ class Base implements Action {
   }
 }
 
-export class Use extends Base {
+export class Bring extends BringMoveSwap {
   constructor(graph: Graph) {
     super(graph, "use");
   }
 }
 
-export class Swap extends Base {
+export class Move extends BringMoveSwap {
   constructor(graph: Graph) {
-    super(graph, "swap");
+    super(graph, "move");
   }
 }
 
-export class Move extends Base {
+export class Swap extends BringMoveSwap {
   constructor(graph: Graph) {
-    super(graph, "move");
+    super(graph, "swap");
   }
 }
