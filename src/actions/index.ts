@@ -11,10 +11,9 @@ import {
   SetSelectionBefore,
   SetSelectionAfter,
 } from "./setSelection";
-import Swap from "./swap";
-import Use from "./use";
 import Wrap from "./wrap";
 import { ScrollToTop, ScrollToCenter, ScrollToBottom } from "./Scroll";
+import { Use, Move, Swap } from "./UseMoveSwap";
 
 class Actions implements ActionRecord {
   constructor(private graph: Graph) {}
@@ -27,6 +26,7 @@ class Actions implements ActionRecord {
   fold = new Fold(this.graph);
   insertLineBefore = new InsertLineBefore(this.graph);
   insertLineAfter = new InsertLineAfter(this.graph);
+  move = new Move(this.graph);
   paste: Action = {
     run: async ([targets]) => {
       throw new Error("Not implemented");

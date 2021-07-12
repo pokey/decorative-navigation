@@ -231,6 +231,7 @@ export type ActionType =
   | "fold"
   | "insertLineAfter"
   | "insertLineBefore"
+  | "move"
   | "paste"
   | "scrollToBottom"
   | "scrollToCenter"
