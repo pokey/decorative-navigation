@@ -141,16 +141,12 @@ class BringMoveSwap implements Action {
   }
 
   private async getThatMark(edits: Edit[]): Promise<ThatMarkEntry[]> {
-    // Only swap has source as a that mark
-    if (this.type !== "swap") {
-      edits = edits.filter(({ targetsIndex }) => targetsIndex === 0);
-    }
     return flatten(
       await runForEachEditor(
         edits,
         (edit) => edit.editor,
         async (editor, edits) => {
-          const newEdits = zip(edits, computeChangedOffsets(editor, edits)).map(
+          let newEdits = zip(edits, computeChangedOffsets(editor, edits)).map(
             ([originalEdit, changedEdit]) => ({
               targetsIndex: originalEdit!.targetsIndex,
               originalSelection: originalEdit!.originalSelection,
@@ -160,6 +156,16 @@ class BringMoveSwap implements Action {
               newEndOffset: changedEdit!.endOffset,
             })
           );
+
+          // We have to update the document in the middle of calculating the mark for the positions to be correct
+          await performDocumentEdits(editor, edits);
+
+          // Only swap has source as a that mark
+          if (this.type !== "swap") {
+            newEdits = newEdits.filter(
+              ({ targetsIndex }) => targetsIndex === 0
+            );
+          }
 
           return newEdits.map((edit) => {
             const start = editor.document.positionAt(edit.newStartOffset);
@@ -219,8 +225,6 @@ class BringMoveSwap implements Action {
     const edits = this.getEdits(sources, destinations);
 
     const thatMark = await this.getThatMark(edits);
-
-    await performDocumentEdits(edits);
 
     await this.decorateThatMark(thatMark);
 
