@@ -126,8 +126,6 @@ export async function activate(context: vscode.ExtensionContext) {
           partialTargets,
           action.targetPreferences
         );
-        // console.log(`targets:`);
-        // console.log(JSON.stringify(targets, null, 3));
 
         const processedTargetsContext: ProcessedTargetsContext = {
           currentSelections:

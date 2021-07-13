@@ -32,14 +32,27 @@ export default async function displayPendingEditDecorations(
       lineStyle,
       selections
         .filter((selection) => isLineSelectionType(selection.selectionType))
-        .map((selection) =>
-          selection.selection.selection.with(
-            undefined,
-            // NB: We move end up one line because it is at beginning of
-            // next line
-            selection.selection.selection.end.translate(-1)
-          )
-        )
+        .map((selection) => {
+          const start = selection.selection.selection.start;
+          const startLine = selection.selection.editor.document.lineAt(start);
+          if (start.character === startLine.range.end.character) {
+            return selection.selection.selection.with(
+              // NB: We move start down one line because it is at end of
+              // previous line
+              selection.selection.selection.start.translate(1),
+              undefined
+            );
+          }
+          if (selection.selection.selection.end.character === 0) {
+            return selection.selection.selection.with(
+              undefined,
+              // NB: We move end up one line because it is at beginning of
+              // next line
+              selection.selection.selection.end.translate(-1)
+            );
+          }
+          return selection.selection.selection;
+        })
     );
   });
 
