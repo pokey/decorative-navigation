@@ -4,6 +4,7 @@ import {
   ActionReturnValue,
   Graph,
   TypedSelection,
+  Edit,
 } from "../Types";
 import { runForEachEditor } from "../targetUtils";
 import update from "immutability-helper";
@@ -11,20 +12,13 @@ import displayPendingEditDecorations from "../editDisplayUtils";
 import { computeChangedOffsets } from "../computeChangedOffsets";
 import { flatten, zip } from "lodash";
 import { Selection, TextEditorDecorationType, TextEditor } from "vscode";
+import performDocumentEdits from "../performDocumentEdits";
 
 interface DecorationTypes {
   sourceStyle: TextEditorDecorationType;
   sourceLineStyle: TextEditorDecorationType;
   destinationStyle: TextEditorDecorationType;
   destinationLineStyle: TextEditorDecorationType;
-}
-
-interface Edit {
-  editor: TextEditor;
-  range: Selection;
-  newText: string;
-  targetsIndex: number;
-  originalSelection: TypedSelection;
 }
 
 interface ThatMarkEntry {
@@ -57,19 +51,24 @@ class BringMoveSwap implements Action {
   }
 
   private getDecorationStyles(): DecorationTypes {
-    if (this.type === "use") {
-      return {
-        sourceStyle: this.graph.editStyles.referenced,
-        sourceLineStyle: this.graph.editStyles.referencedLine,
-        destinationStyle: this.graph.editStyles.pendingModification0,
-        destinationLineStyle: this.graph.editStyles.pendingLineModification0,
-      };
+    let sourceStyle, sourceLineStyle;
+    if (this.type === "bring") {
+      sourceStyle = this.graph.editStyles.referenced;
+      sourceLineStyle = this.graph.editStyles.referencedLine;
+    } else if (this.type === "swap") {
+      sourceStyle = this.graph.editStyles.pendingModification1;
+      sourceLineStyle = this.graph.editStyles.pendingLineModification1;
+    } else if (this.type === "move") {
+      sourceStyle = this.graph.editStyles.pendingDelete;
+      sourceLineStyle = this.graph.editStyles.pendingLineDelete;
+    } else {
+      throw Error(`Unknown type "${this.type}"`);
     }
     return {
-      sourceStyle: this.graph.editStyles.pendingModification0,
-      sourceLineStyle: this.graph.editStyles.pendingLineModification0,
-      destinationStyle: this.graph.editStyles.pendingModification1,
-      destinationLineStyle: this.graph.editStyles.pendingLineModification1,
+      sourceStyle,
+      sourceLineStyle,
+      destinationStyle: this.graph.editStyles.pendingModification0,
+      destinationLineStyle: this.graph.editStyles.pendingLineModification0,
     };
   }
 
@@ -118,7 +117,7 @@ class BringMoveSwap implements Action {
 
         // Add source edit for move and swap
         // Prevent multiple instances of the same expanded source.
-        if (this.type !== "use" && !usedSources.includes(source)) {
+        if (this.type !== "bring" && !usedSources.includes(source)) {
           let newText = ""; // Defaults to delete source/move
           if (this.type === "swap") {
             newText = destination.selection.editor.document.getText(
@@ -138,24 +137,6 @@ class BringMoveSwap implements Action {
 
         return result;
       })
-    );
-  }
-
-  private async performDocumentEdits(edits: Edit[]) {
-    return runForEachEditor(
-      edits,
-      (edit) => edit.editor,
-      async (editor, edits) => {
-        await editor.edit((editBuilder) => {
-          edits.forEach((edit) => {
-            if (edit.range.isEmpty) {
-              editBuilder.insert(edit.range.start, edit.newText);
-            } else {
-              editBuilder.replace(edit.range, edit.newText);
-            }
-          });
-        });
-      }
     );
   }
 
@@ -239,7 +220,7 @@ class BringMoveSwap implements Action {
 
     const thatMark = await this.getThatMark(edits);
 
-    await this.performDocumentEdits(edits);
+    await performDocumentEdits(edits);
 
     await this.decorateThatMark(thatMark);
 
@@ -249,7 +230,7 @@ class BringMoveSwap implements Action {
 
 export class Bring extends BringMoveSwap {
   constructor(graph: Graph) {
-    super(graph, "use");
+    super(graph, "bring");
   }
 }
 

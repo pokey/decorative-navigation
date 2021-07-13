@@ -18,6 +18,9 @@ import { Bring, Move, Swap } from "./BringMoveSwap";
 class Actions implements ActionRecord {
   constructor(private graph: Graph) {}
 
+  // TODO NB Remove when user had time to migrate to new talon code
+  use = new Bring(this.graph);
+
   bring = new Bring(this.graph);
   clear = new Clear(this.graph);
   copy = new Copy(this.graph);

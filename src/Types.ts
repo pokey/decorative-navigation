@@ -273,3 +273,12 @@ export type SelectionExtractor = (
   editor: vscode.TextEditor,
   node: SyntaxNode
 ) => SelectionWithContext | null;
+
+/** Represent a single edit/change in the document */
+export interface Edit {
+  editor: vscode.TextEditor;
+  range: vscode.Selection;
+  newText: string;
+  targetsIndex: number;
+  originalSelection: TypedSelection;
+}
