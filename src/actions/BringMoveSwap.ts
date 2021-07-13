@@ -30,7 +30,7 @@ interface ThatMarkEntry {
 
 class BringMoveSwap implements Action {
   targetPreferences: ActionPreferences[] = [
-    { insideOutsideType: "inside" },
+    { insideOutsideType: null },
     { insideOutsideType: "inside" },
   ];
 

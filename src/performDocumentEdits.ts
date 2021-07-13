@@ -1,5 +1,6 @@
 import { Edit } from "./types";
 import { TextEditor } from "vscode";
+import { performInsideOutsideAdjustment } from "./performInsideOutsideAdjustment";
 
 export default async function performDocumentEdits(
   editor: TextEditor,
@@ -8,7 +9,11 @@ export default async function performDocumentEdits(
   return editor.edit((editBuilder) => {
     edits.forEach((edit) => {
       if (edit.newText === "") {
-        editBuilder.delete(edit.range);
+        const selection = performInsideOutsideAdjustment(
+          edit.originalSelection,
+          "outside"
+        );
+        editBuilder.delete(selection.selection.selection);
       } else if (edit.range.isEmpty) {
         editBuilder.insert(edit.range.start, edit.newText);
       } else {
