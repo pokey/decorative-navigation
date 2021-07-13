@@ -54,4 +54,8 @@ export default class NavigationMap {
   public getToken(color: SymbolColor, character: string) {
     return this.map[this.getKey(color, character)];
   }
+
+  public clear() {
+    this.map = {};
+  }
 }

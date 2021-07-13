@@ -4,7 +4,6 @@ import { DEBOUNCE_DELAY } from "./constants";
 import Decorations from "./Decorations";
 import graphConstructors from "./graphConstructors";
 import { inferFullTargets } from "./inferFullTargets";
-import NavigationMap from "./NavigationMap";
 import processTargets from "./processTargets";
 import computeFontSize from "./computeFontSize";
 import {
@@ -37,14 +36,12 @@ export async function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  var navigationMap: NavigationMap | null = null;
-
   function addDecorations() {
     if (isActive) {
-      navigationMap = addDecorationsToEditors(decorations);
+      addDecorationsToEditors(graph.navigationMap, decorations);
     } else {
       vscode.window.visibleTextEditors.forEach(clearEditorDecorations);
-      navigationMap = new NavigationMap();
+      graph.navigationMap.clear();
     }
   }
 
@@ -131,7 +128,7 @@ export async function activate(context: vscode.ExtensionContext) {
               editor: vscode.window.activeTextEditor!,
             })) ?? [],
           currentEditor: vscode.window.activeTextEditor,
-          navigationMap: navigationMap!,
+          navigationMap: graph.navigationMap,
           thatMark,
           getNodeAtLocation,
         };
@@ -179,9 +176,7 @@ export async function activate(context: vscode.ExtensionContext) {
   addDecorationsDebounced();
 
   function handleEdit(edit: vscode.TextDocumentChangeEvent) {
-    if (navigationMap != null) {
-      navigationMap.updateTokenRanges(edit);
-    }
+    graph.navigationMap.updateTokenRanges(edit);
 
     addDecorationsDebounced();
   }
