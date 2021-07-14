@@ -108,14 +108,24 @@ class BringMoveSwap implements Action {
           throw new Error("Targets must have same number of args");
         }
 
+        const sourceText = source.selection.editor.document.getText(
+          source.selection.selection
+        );
+
+        const { containingListDelimiter } = destination.selectionContext;
+        const newText =
+          containingListDelimiter == null || destination.position === "contents"
+            ? sourceText
+            : destination.position === "after"
+            ? containingListDelimiter + sourceText
+            : sourceText + containingListDelimiter;
+
         // Add destination edit
         const result = [
           {
             editor: destination.selection.editor,
             range: destination.selection.selection as Range,
-            newText: source.selection.editor.document.getText(
-              source.selection.selection
-            ),
+            newText,
             targetsIndex: 0,
             originalSelection: destination,
           },
