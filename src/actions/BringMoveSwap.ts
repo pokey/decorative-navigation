@@ -9,9 +9,10 @@ import {
 import { runForEachEditor } from "../targetUtils";
 import update from "immutability-helper";
 import displayPendingEditDecorations from "../editDisplayUtils";
+import { performInsideOutsideAdjustment } from "../performInsideOutsideAdjustment";
 import { computeChangedOffsets } from "../computeChangedOffsets";
 import { flatten, zip } from "lodash";
-import { Selection, TextEditorDecorationType, TextEditor } from "vscode";
+import { Selection, TextEditorDecorationType, TextEditor, Range } from "vscode";
 import performDocumentEdits from "../performDocumentEdits";
 
 interface DecorationTypes {
@@ -26,6 +27,11 @@ interface ThatMarkEntry {
   targetsIndex: number;
   typedSelection: TypedSelection;
   selection: Selection;
+}
+
+interface ExtendedEdit extends Edit {
+  targetsIndex: number;
+  originalSelection: TypedSelection;
 }
 
 class BringMoveSwap implements Action {
@@ -94,7 +100,7 @@ class BringMoveSwap implements Action {
   private getEdits(
     sources: TypedSelection[],
     destinations: TypedSelection[]
-  ): Edit[] {
+  ): ExtendedEdit[] {
     const usedSources: TypedSelection[] = [];
     return flatten(
       zip(sources, destinations).map(([source, destination]) => {
@@ -106,7 +112,7 @@ class BringMoveSwap implements Action {
         const result = [
           {
             editor: destination.selection.editor,
-            range: destination.selection.selection,
+            range: destination.selection.selection as Range,
             newText: source.selection.editor.document.getText(
               source.selection.selection
             ),
@@ -118,17 +124,25 @@ class BringMoveSwap implements Action {
         // Add source edit for move and swap
         // Prevent multiple instances of the same expanded source.
         if (this.type !== "bring" && !usedSources.includes(source)) {
-          let newText = ""; // Defaults to delete source/move
+          let newText: string;
+          let range: Range;
+
           if (this.type === "swap") {
             newText = destination.selection.editor.document.getText(
               destination.selection.selection
             );
+            range = source.selection.selection;
+          } else {
+            // NB: this.type === "move"
+            newText = "";
+            range = performInsideOutsideAdjustment(source, "outside").selection
+              .selection;
           }
 
           usedSources.push(source);
           result.push({
             editor: source.selection.editor,
-            range: source.selection.selection,
+            range,
             newText,
             targetsIndex: 1,
             originalSelection: source,
@@ -140,7 +154,9 @@ class BringMoveSwap implements Action {
     );
   }
 
-  private async getThatMark(edits: Edit[]): Promise<ThatMarkEntry[]> {
+  private async performEditsAndComputeThatMark(
+    edits: ExtendedEdit[]
+  ): Promise<ThatMarkEntry[]> {
     return flatten(
       await runForEachEditor(
         edits,
@@ -157,10 +173,11 @@ class BringMoveSwap implements Action {
             })
           );
 
-          // We have to update the document in the middle of calculating the mark for the positions to be correct
+          // We have to update the document in the middle of calculating the
+          // "that" mark for the positions to be correct
           await performDocumentEdits(editor, edits);
 
-          // Only swap has source as a that mark
+          // Only swap has source as a "that" mark
           if (this.type !== "swap") {
             newEdits = newEdits.filter(
               ({ targetsIndex }) => targetsIndex === 0
@@ -224,7 +241,7 @@ class BringMoveSwap implements Action {
 
     const edits = this.getEdits(sources, destinations);
 
-    const thatMark = await this.getThatMark(edits);
+    const thatMark = await this.performEditsAndComputeThatMark(edits);
 
     await this.decorateThatMark(thatMark);
 

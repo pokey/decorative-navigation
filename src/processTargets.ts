@@ -364,23 +364,19 @@ function getTokenSelectionContext(
   selection: SelectionWithEditor,
   selectionContext: SelectionContext
 ): SelectionContext {
-  if (selectionContext.isInDelimitedList) {
+  if (!isSelectionContextEmpty(selectionContext)) {
     return selectionContext;
   }
 
-  const start = selection.selection.isReversed
-    ? selection.selection.end
-    : selection.selection.start;
-  const end = selection.selection.isReversed
-    ? selection.selection.start
-    : selection.selection.end;
+  const document = selection.editor.document;
+  const { start, end } = selection.selection;
 
-  const startLine = selection.editor.document.lineAt(start);
+  const startLine = document.lineAt(start);
   const leadingText = startLine.text.slice(0, start.character);
-  const leadingSibling = leadingText.trim().length > 0;
+  const hasLeadingSibling = leadingText.trim().length > 0;
   const leadingDelimiters = leadingText.match(/\s+$/);
   const leadingDelimiterRange =
-    leadingSibling && leadingDelimiters
+    hasLeadingSibling && leadingDelimiters != null
       ? new Range(
           start.line,
           start.character - leadingDelimiters[0].length,
@@ -389,12 +385,12 @@ function getTokenSelectionContext(
         )
       : null;
 
-  const endLine = selection.editor.document.lineAt(end);
+  const endLine = document.lineAt(end);
   const trailingText = endLine.text.slice(end.character);
-  const trailingSibling = trailingText.trim().length > 0;
-  const trailingDelimiters = trailingText.match(/^ +/);
+  const hasTrailingSibling = trailingText.trim().length > 0;
+  const trailingDelimiters = trailingText.match(/^\s+/);
   const trailingDelimiterRange =
-    trailingSibling && trailingDelimiters
+    hasTrailingSibling && trailingDelimiters != null
       ? new Range(
           end.line,
           end.character,
@@ -410,39 +406,44 @@ function getTokenSelectionContext(
 
   return {
     isInDelimitedList: true,
-    containingListDelimiter: " ",
+    containingListDelimiter: document.getText(
+      (trailingDelimiterRange ?? leadingDelimiterRange)!
+    ),
     leadingDelimiterRange,
     trailingDelimiterRange,
   };
+}
+
+// TODO Clean this up once we have rich targets and better polymorphic
+// selection contexts that indicate their type
+function isSelectionContextEmpty(selectionContext: SelectionContext) {
+  return (
+    selectionContext.isInDelimitedList == null &&
+    selectionContext.containingListDelimiter == null &&
+    selectionContext.leadingDelimiterRange == null &&
+    selectionContext.trailingDelimiterRange == null
+  );
 }
 
 function getLineSelectionContext(
   selection: SelectionWithEditor,
   selectionContext: SelectionContext
 ): SelectionContext {
-  if (selectionContext.isInDelimitedList) {
-    return selectionContext;
-  }
-
-  const start = selection.selection.isReversed
-    ? selection.selection.end
-    : selection.selection.start;
-  const end = selection.selection.isReversed
-    ? selection.selection.start
-    : selection.selection.end;
+  const document = selection.editor.document;
+  const { start, end } = selection.selection;
 
   const leadingDelimiterRange =
     start.line > 0
       ? new Range(
-          end.line - 1,
-          selection.editor.document.lineAt(end.line - 1).range.end.character,
+          start.line - 1,
+          document.lineAt(start.line - 1).range.end.character,
           start.line,
           0
         )
       : null;
 
   const trailingDelimiterRange =
-    end.line + 1 < selection.editor.document.lineCount
+    end.line + 1 < document.lineCount
       ? new Range(end.line, 0, end.line + 1, 0)
       : null;
 

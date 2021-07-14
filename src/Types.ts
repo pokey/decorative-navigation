@@ -277,8 +277,6 @@ export type SelectionExtractor = (
 /** Represent a single edit/change in the document */
 export interface Edit {
   editor: vscode.TextEditor;
-  range: vscode.Selection;
+  range: vscode.Range;
   newText: string;
-  targetsIndex: number;
-  originalSelection: TypedSelection;
 }
