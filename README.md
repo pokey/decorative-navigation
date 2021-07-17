@@ -49,6 +49,8 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/pokey/cursorless-vscode)
+
 ### Installation
 
 ```sh
