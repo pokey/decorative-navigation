@@ -7,7 +7,7 @@ import {
 } from "../Types";
 import { commands } from "vscode";
 
-export class InsertLineBefore implements Action {
+export class EditNewLineAbove implements Action {
   targetPreferences: ActionPreferences[] = [{ insideOutsideType: "outside" }];
 
   constructor(private graph: Graph) {
@@ -28,7 +28,7 @@ export class InsertLineBefore implements Action {
   }
 }
 
-export class InsertLineAfter implements Action {
+export class EditNewLineBelow implements Action {
   targetPreferences: ActionPreferences[] = [{ insideOutsideType: "outside" }];
 
   constructor(private graph: Graph) {
