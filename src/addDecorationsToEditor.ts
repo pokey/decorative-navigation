@@ -13,7 +13,12 @@ interface CharacterTokenInfo {
   tokenIdx: number;
 }
 
-export function addDecorationsToEditors(decorations: Decorations) {
+export function addDecorationsToEditors(
+  navigationMap: NavigationMap,
+  decorations: Decorations
+) {
+  navigationMap.clear();
+
   var editors: vscode.TextEditor[];
 
   if (vscode.window.activeTextEditor == null) {
@@ -85,8 +90,6 @@ export function addDecorationsToEditors(decorations: Decorations) {
     ])
   );
 
-  const navigationMap = new NavigationMap();
-
   // Picks the character with minimum color such that the next token that contains
   // that character is as far away as possible.
   // TODO: Could be improved by ignoring subsequent tokens that also contain
@@ -151,6 +154,4 @@ export function addDecorationsToEditors(decorations: Decorations) {
       editor.setDecorations(decorations.decorationMap[color]!, ranges[color]!);
     });
   });
-
-  return navigationMap;
 }

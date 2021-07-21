@@ -1,0 +1,61 @@
+talonCommand: chuck that
+command:
+  actionName: delete
+  partialTargets:
+    - type: primitive
+      mark:
+        type: that
+  extraArgs: []
+languageId: python
+targets:
+  - type: primitive
+    mark:
+      type: that
+    selectionType: token
+    position: contents
+    modifier:
+      type: identity
+    insideOutsideType: outside
+marks: {}
+initialState:
+  document: |
+    import sys
+
+    def hello_world(name="pokey"):
+        print(f"hello, {name}")
+      
+    if __name__ == "__main__":
+        hello_world(sys.argv[0])
+  selections:
+    - active:
+        line: 3
+        character: 27
+      anchor:
+        line: 3
+        character: 27
+  visibleRanges: []
+finalState:
+  document: |
+    import sys
+
+
+      
+    if __name__ == "__main__":
+        hello_world(sys.argv[0])
+  selections:
+    - active:
+        line: 2
+        character: 0
+      anchor:
+        line: 2
+        character: 0
+  visibleRanges: []
+  clipboard: ""
+  thatMark:
+    - active:
+        line: 2
+        character: 0
+      anchor:
+        line: 2
+        character: 0
+returnValue: null

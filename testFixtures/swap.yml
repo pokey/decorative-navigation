@@ -1,0 +1,103 @@
+talonCommand: swap harp with crunch
+command:
+  actionName: swap
+  partialTargets:
+    - type: primitive
+      mark:
+        type: decoratedSymbol
+        symbolColor: default
+        character: h
+    - type: primitive
+      mark:
+        type: decoratedSymbol
+        symbolColor: default
+        character: k
+  extraArgs: []
+languageId: python
+targets:
+  - type: primitive
+    mark:
+      type: decoratedSymbol
+      symbolColor: default
+      character: h
+    selectionType: token
+    position: contents
+    modifier:
+      type: identity
+    insideOutsideType: inside
+  - type: primitive
+    mark:
+      type: decoratedSymbol
+      symbolColor: default
+      character: k
+    selectionType: token
+    position: contents
+    modifier:
+      type: identity
+    insideOutsideType: inside
+marks:
+  default.h:
+    start:
+      line: 3
+      character: 12
+    end:
+      line: 3
+      character: 17
+  default.k:
+    start:
+      line: 2
+      character: 22
+    end:
+      line: 2
+      character: 27
+initialState:
+  document: |
+    import sys
+
+    def hello_world(name="pokey"):
+        print(f"hello, {name}")
+      
+    if __name__ == "__main__":
+        hello_world(sys.argv[0])
+  selections:
+    - active:
+        line: 7
+        character: 0
+      anchor:
+        line: 7
+        character: 0
+  visibleRanges: []
+  clipboard: ""
+  thatMark: []
+finalState:
+  document: |
+    import sys
+
+    def hello_world(name="hello"):
+        print(f"pokey, {name}")
+      
+    if __name__ == "__main__":
+        hello_world(sys.argv[0])
+  selections:
+    - active:
+        line: 7
+        character: 0
+      anchor:
+        line: 7
+        character: 0
+  visibleRanges: []
+  clipboard: ""
+  thatMark:
+    - active:
+        line: 3
+        character: 17
+      anchor:
+        line: 3
+        character: 12
+    - active:
+        line: 2
+        character: 27
+      anchor:
+        line: 2
+        character: 22
+returnValue: null

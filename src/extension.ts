@@ -4,7 +4,6 @@ import { DEBOUNCE_DELAY } from "./constants";
 import Decorations from "./Decorations";
 import graphConstructors from "./graphConstructors";
 import { inferFullTargets } from "./inferFullTargets";
-import NavigationMap from "./NavigationMap";
 import processTargets from "./processTargets";
 import FontMeasurements from "./FontMeasurements";
 import {
@@ -13,8 +12,11 @@ import {
   ProcessedTargetsContext,
   SelectionWithEditor,
 } from "./Types";
-import makeGraph from "./makeGraph";
+import { makeGraph } from "./makeGraph";
 import { logBranchTypes } from "./debug";
+import TestCase from "./TestCase";
+import { ThatMark } from "./ThatMark";
+import { Clipboard } from "./Clipboard";
 
 export async function activate(context: vscode.ExtensionContext) {
   const fontMeasurements = new FontMeasurements(context);
@@ -39,14 +41,12 @@ export async function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  var navigationMap: NavigationMap | null = null;
-
   function addDecorations() {
     if (isActive) {
-      navigationMap = addDecorationsToEditors(decorations);
+      addDecorationsToEditors(graph.navigationMap, decorations);
     } else {
       vscode.window.visibleTextEditors.forEach(clearEditorDecorations);
-      navigationMap = new NavigationMap();
+      graph.navigationMap.clear();
     }
   }
 
@@ -81,8 +81,33 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const graph = makeGraph(graphConstructors);
-  var thatMark: SelectionWithEditor[] = [];
+  const thatMark = new ThatMark();
+  let testCaseRecording = { active: false, talonCommand: "", filename: "" };
+  const cursorlessRecordTestCaseDisposable = vscode.commands.registerCommand(
+    "cursorless.recordTestCase",
+    async () => {
+      console.log("Recording test case for next command");
 
+      const talonCommand = await vscode.window.showInputBox({
+        prompt: "Talon Command",
+        validateInput: (input) =>
+          input.trim().length ? "" : "Missing command",
+      });
+      const filename = await vscode.window.showInputBox({
+        prompt: "Test Filename",
+        validateInput: (input) =>
+          input.trim().length ? "" : "Missing filename",
+      });
+
+      if (!filename || !talonCommand) {
+        throw new Error("File name and talon command required");
+      }
+
+      testCaseRecording.active = true;
+      testCaseRecording.filename = filename;
+      testCaseRecording.talonCommand = talonCommand;
+    }
+  );
   const cursorlessCommandDisposable = vscode.commands.registerCommand(
     "cursorless.command",
     async (
@@ -109,7 +134,7 @@ export async function activate(context: vscode.ExtensionContext) {
         var clipboardContents: string | undefined;
 
         if (isPaste) {
-          clipboardContents = await vscode.env.clipboard.readText();
+          clipboardContents = await Clipboard.readText();
           // clipboardContents = "hello";
           // clipboardContents = "hello\n";
           // clipboardContents = "\nhello\n";
@@ -134,19 +159,39 @@ export async function activate(context: vscode.ExtensionContext) {
               editor: vscode.window.activeTextEditor!,
             })) ?? [],
           currentEditor: vscode.window.activeTextEditor,
-          navigationMap: navigationMap!,
-          thatMark,
+          navigationMap: graph.navigationMap,
+          thatMark: thatMark.get(),
           getNodeAtLocation,
         };
 
         const selections = processTargets(processedTargetsContext, targets);
+
+        let testCase: TestCase | null = null;
+        if (testCaseRecording.active) {
+          const command = { actionName, partialTargets, extraArgs };
+          const context = {
+            thatMark: thatMark,
+            targets,
+            navigationMap: graph.navigationMap!,
+            talonCommand: testCaseRecording.talonCommand,
+          };
+          testCase = new TestCase(command, context);
+          await testCase.saveSnapshot();
+        }
 
         const { returnValue, thatMark: newThatMark } = await action.run(
           selections,
           ...extraArgs
         );
 
-        thatMark = newThatMark;
+        thatMark.set(newThatMark);
+
+        if (testCase != null) {
+          await testCase.saveSnapshot();
+          testCase.returnValue = returnValue;
+          testCase.writeFixture(testCaseRecording.filename);
+          testCaseRecording.active = false;
+        }
 
         return returnValue;
 
@@ -174,6 +219,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // const processedTargets = processTargets(navigationMap!, targets);
       } catch (e) {
         vscode.window.showErrorMessage(e.message);
+        console.trace(e.message);
         throw e;
       }
     }
@@ -182,9 +228,7 @@ export async function activate(context: vscode.ExtensionContext) {
   addDecorationsDebounced();
 
   function handleEdit(edit: vscode.TextDocumentChangeEvent) {
-    if (navigationMap != null) {
-      navigationMap.updateTokenRanges(edit);
-    }
+    graph.navigationMap.updateTokenRanges(edit);
 
     addDecorationsDebounced();
   }
@@ -198,6 +242,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     cursorlessCommandDisposable,
+    cursorlessRecordTestCaseDisposable,
     toggleDecorationsDisposable,
     recomputeDecorationStylesDisposable,
     vscode.workspace.onDidChangeConfiguration(recomputeDecorationStyles),
@@ -217,6 +262,11 @@ export async function activate(context: vscode.ExtensionContext) {
       },
     }
   );
+
+  return {
+    navigationMap: graph.navigationMap,
+    thatMark,
+  };
 }
 
 // this method is called when your extension is deactivated

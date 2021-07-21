@@ -25,7 +25,7 @@ function makeGetter<GraphType, K extends keyof GraphType>(
   };
 }
 
-export default function makeGraph<GraphType extends object>(
+export function makeGraph<GraphType extends object>(
   constructorMap: ConstructorMap<GraphType>
 ) {
   const components: Partial<GraphType> = {};
