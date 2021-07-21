@@ -250,6 +250,7 @@ export type ActionType =
   | "scrollToBottom"
   | "scrollToCenter"
   | "scrollToTop"
+  | "setBreakpoint"
   | "setSelection"
   | "setSelectionAfter"
   | "setSelectionBefore"
