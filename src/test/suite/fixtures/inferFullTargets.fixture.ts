@@ -330,7 +330,7 @@ const fixture: Fixture[] = [
           },
           end: {
             type: "primitive",
-            selectionType: "block",
+            selectionType: "paragraph",
             mark: {
               type: "decoratedSymbol",
               symbolColor: "red",
@@ -349,7 +349,7 @@ const fixture: Fixture[] = [
           mark: {
             type: "cursor",
           },
-          selectionType: "block",
+          selectionType: "paragraph",
           position: "contents",
           modifier: {
             type: "identity",
@@ -362,7 +362,7 @@ const fixture: Fixture[] = [
             symbolColor: "red",
             character: "h",
           },
-          selectionType: "block",
+          selectionType: "paragraph",
           position: "contents",
           modifier: {
             type: "identity",
@@ -786,7 +786,7 @@ const fixture: Fixture[] = [
           symbolColor: "default",
           character: "f",
         },
-        selectionType: "block",
+        selectionType: "paragraph",
         position: "after",
         modifier: {
           type: "identity",
@@ -817,7 +817,7 @@ const fixture: Fixture[] = [
         mark: {
           type: "cursor",
         },
-        selectionType: "block",
+        selectionType: "paragraph",
         position: "after",
         modifier: {
           type: "identity",
@@ -848,7 +848,7 @@ const fixture: Fixture[] = [
         mark: {
           type: "cursor",
         },
-        selectionType: "block",
+        selectionType: "paragraph",
         position: "contents",
         modifier: {
           type: "identity",
@@ -908,7 +908,7 @@ const fixture: Fixture[] = [
         mark: {
           type: "cursor",
         },
-        selectionType: "block",
+        selectionType: "paragraph",
         position: "contents",
         modifier: {
           type: "identity",
@@ -1814,7 +1814,7 @@ const fixture: Fixture[] = [
           end: {
             type: "primitive",
             position: "end",
-            selectionType: "block",
+            selectionType: "paragraph",
           },
         },
       ],
@@ -1839,7 +1839,7 @@ const fixture: Fixture[] = [
           mark: {
             type: "cursor",
           },
-          selectionType: "block",
+          selectionType: "paragraph",
           position: "end",
           modifier: {
             type: "identity",

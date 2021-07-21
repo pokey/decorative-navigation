@@ -10,23 +10,18 @@ export function performInsideOutsideAdjustment(
     selection.insideOutsideType ?? preferredInsideOutsideType;
 
   if (insideOutsideType === "outside") {
-    const delimiterRange =
-      selection.selectionContext.trailingDelimiterRange ??
-      selection.selectionContext.leadingDelimiterRange;
-
     const usedSelection =
       selection.selectionContext.outerSelection ??
       selection.selection.selection;
 
-    if (delimiterRange == null) {
-      return update(selection, {
-        selection: {
-          selection: () => usedSelection,
-        },
-      });
-    }
+    const delimiterRange =
+      selection.selectionContext.trailingDelimiterRange ??
+      selection.selectionContext.leadingDelimiterRange;
 
-    const range = usedSelection.union(delimiterRange);
+    const range =
+      delimiterRange != null
+        ? usedSelection.union(delimiterRange)
+        : usedSelection;
 
     return update(selection, {
       selection: {
