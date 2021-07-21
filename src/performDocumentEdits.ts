@@ -6,13 +6,13 @@ export default async function performDocumentEdits(
   edits: Edit[]
 ) {
   return editor.edit((editBuilder) => {
-    edits.forEach(({ range, newText }) => {
-      if (newText === "") {
+    edits.forEach(({ range, text }) => {
+      if (text === "") {
         editBuilder.delete(range);
       } else if (range.isEmpty) {
-        editBuilder.insert(range.start, newText);
+        editBuilder.insert(range.start, text);
       } else {
-        editBuilder.replace(range, newText);
+        editBuilder.replace(range, text);
       }
     });
   });

@@ -6,11 +6,12 @@ import {
   TypedSelection,
 } from "../Types";
 import displayPendingEditDecorations from "../editDisplayUtils";
-import { env, Selection } from "vscode";
+import { env } from "vscode";
 import { runForEachEditor } from "../targetUtils";
-import { computeChangedOffsets } from "../computeChangedOffsets";
-import { flatten, zip } from "lodash";
+import { flatten } from "lodash";
 import update from "immutability-helper";
+import CalculateChanges from "../CalculateChanges";
+import performDocumentEdits from "../performDocumentEdits";
 
 export default class Paste implements Action {
   targetPreferences: ActionPreferences[] = [{ insideOutsideType: "inside" }];
@@ -44,8 +45,8 @@ export default class Paste implements Action {
     const edits = targets.map((target, index) => ({
       editor: target.selection.editor,
       range: target.selection.selection,
+      text: getText(index),
       originalSelection: target,
-      newText: getText(index),
     }));
 
     const thatMark = flatten(
@@ -53,43 +54,26 @@ export default class Paste implements Action {
         edits,
         (edit) => edit.editor,
         async (editor, edits) => {
-          const newEdits = zip(edits, computeChangedOffsets(editor, edits)).map(
-            ([originalEdit, changedEdit]) => ({
-              originalRange: originalEdit!.range,
-              originalSelection: originalEdit!.originalSelection,
-              newText: originalEdit!.newText,
-              newStartOffset: changedEdit!.startOffset,
-              newEndOffset: changedEdit!.endOffset,
-            })
+          const calculateChanges = new CalculateChanges(
+            editor,
+            [targets.map((target) => target.selection.selection)],
+            edits
           );
 
-          await editor.edit((editBuilder) => {
-            newEdits.forEach((edit) => {
-              if (edit.originalRange.isEmpty) {
-                editBuilder.insert(edit.originalRange.start, edit.newText);
-              } else {
-                editBuilder.replace(edit.originalRange, edit.newText);
-              }
-            });
-          });
+          await performDocumentEdits(editor, edits);
 
-          return newEdits.map((edit) => {
-            const start = editor.document.positionAt(edit.newStartOffset);
-            const end = editor.document.positionAt(edit.newEndOffset);
-            const isReversed =
-              edit.originalSelection.selection.selection.isReversed;
-            const selection = new Selection(
-              isReversed ? end : start,
-              isReversed ? start : end
-            );
+          const [updatedSelections] = calculateChanges.calculateSelections();
+
+          return edits.map((edit, index) => {
+            const selection = updatedSelections[index];
             return {
               editor,
+              selection,
               typedSelection: update(edit.originalSelection, {
                 selection: {
                   selection: { $set: selection },
                 },
               }),
-              selection,
             };
           });
         }

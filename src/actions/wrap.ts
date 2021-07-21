@@ -1,4 +1,5 @@
-import { Range, Selection } from "vscode";
+import { Selection } from "vscode";
+import { flatten } from "lodash";
 import {
   Action,
   ActionPreferences,
@@ -8,9 +9,9 @@ import {
   TypedSelection,
 } from "../Types";
 import { runOnTargetsForEachEditor } from "../targetUtils";
-import { flatten, zip } from "lodash";
-import { computeChangedOffsets } from "../computeChangedOffsets";
 import { decorationSleep } from "../editDisplayUtils";
+import CalculateChanges from "../CalculateChanges";
+import performDocumentEdits from "../performDocumentEdits";
 
 export default class Wrap implements Action {
   targetPreferences: ActionPreferences[] = [{ insideOutsideType: "inside" }];
@@ -27,80 +28,44 @@ export default class Wrap implements Action {
     const thatMark = flatten(
       await runOnTargetsForEachEditor<SelectionWithEditor[]>(
         targets,
-        async (editor, selections) => {
-          const originalInsertions = flatten(
-            selections.map((selection, index) => [
-              {
-                range: new Range(
-                  selection.selection.selection.start,
-                  selection.selection.selection.start
-                ),
-                newText: left,
-                selectionIndex: index,
-                side: "left",
-              },
-              {
-                range: new Range(
-                  selection.selection.selection.end,
-                  selection.selection.selection.end
-                ),
-                newText: right,
-                selectionIndex: index,
-                side: "right",
-              },
-            ])
-          );
+        async (editor, targets) => {
+          const selections = targets.flatMap((target) => [
+            new Selection(
+              target.selection.selection.start,
+              target.selection.selection.start
+            ),
+            new Selection(
+              target.selection.selection.end,
+              target.selection.selection.end
+            ),
+          ]);
 
-          const newInsertions = zip(
-            originalInsertions,
-            computeChangedOffsets(editor, originalInsertions)
-          ).map(([originalInsertion, changedInsertion]) => ({
-            selectionIndex: originalInsertion!.selectionIndex,
-            side: originalInsertion!.side,
-            newStartOffset: changedInsertion!.startOffset,
-            newEndOffset: changedInsertion!.endOffset,
+          const edits = selections.map((selection, index) => ({
+            range: selection,
+            text: index % 2 === 0 ? left : right,
           }));
 
-          await editor.edit((editBuilder) => {
-            selections.forEach((selection) => {
-              editBuilder.insert(selection.selection.selection.start, left);
-              editBuilder.insert(selection.selection.selection.end, right);
-            });
-          });
+          const calculateChanges = new CalculateChanges(
+            editor,
+            [selections],
+            edits
+          );
+
+          await performDocumentEdits(editor, edits);
+
+          const [updatedSelections] = calculateChanges.calculateSelections();
 
           editor.setDecorations(
             this.graph.editStyles.justAdded,
-            newInsertions.map(
-              ({ newStartOffset, newEndOffset }) =>
-                new Range(
-                  editor.document.positionAt(newStartOffset),
-                  editor.document.positionAt(newEndOffset)
-                )
-            )
+            updatedSelections
           );
-
           await decorationSleep();
-
           editor.setDecorations(this.graph.editStyles.justAdded, []);
 
-          return selections.map((selection, index) => {
-            const start = editor.document.positionAt(
-              newInsertions.find(
-                (insertion) =>
-                  insertion.selectionIndex === index &&
-                  insertion.side === "left"
-              )!.newStartOffset
-            );
-            const end = editor.document.positionAt(
-              newInsertions.find(
-                (insertion) =>
-                  insertion.selectionIndex === index &&
-                  insertion.side === "right"
-              )!.newEndOffset
-            );
-
-            const isReversed = selection.selection.selection.isReversed;
-
+          return targets.map((target, index) => {
+            const start = updatedSelections[index * 2].start;
+            const end = updatedSelections[index * 2 + 1].end;
+            const isReversed = target.selection.selection.isReversed;
             return {
               editor,
               selection: new Selection(

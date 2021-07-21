@@ -5,11 +5,11 @@ import {
   Graph,
   TypedSelection,
 } from "../Types";
-import { Selection } from "vscode";
-import { computeChangedOffsets } from "../computeChangedOffsets";
 import { runOnTargetsForEachEditor } from "../targetUtils";
 import displayPendingEditDecorations from "../editDisplayUtils";
 import { flatten } from "lodash";
+import CalculateChanges from "../CalculateChanges";
+import performDocumentEdits from "../performDocumentEdits";
 
 export default class Delete implements Action {
   targetPreferences: ActionPreferences[] = [{ insideOutsideType: "outside" }];
@@ -26,28 +26,25 @@ export default class Delete implements Action {
     );
 
     const thatMark = flatten(
-      await runOnTargetsForEachEditor(targets, async (editor, selections) => {
-        const newOffsets = computeChangedOffsets(
+      await runOnTargetsForEachEditor(targets, async (editor, targets) => {
+        const edits = targets.map((target) => ({
+          range: target.selection.selection,
+          text: "",
+        }));
+
+        const calculateChanges = new CalculateChanges(
           editor,
-          selections.map((selection) => ({
-            range: selection.selection.selection,
-            newText: "",
-          }))
+          [targets.map((target) => target.selection.selection)],
+          edits
         );
 
-        await editor.edit((editBuilder) => {
-          selections.forEach((selection) => {
-            // TODO Properly handle last line of file
-            editBuilder.delete(selection.selection.selection);
-          });
-        });
+        await performDocumentEdits(editor, edits);
 
-        return newOffsets.map((offsetRange) => ({
+        const [updatedSelections] = calculateChanges.calculateSelections();
+
+        return updatedSelections.map((selection) => ({
           editor,
-          selection: new Selection(
-            editor.document.positionAt(offsetRange.startOffset),
-            editor.document.positionAt(offsetRange.endOffset)
-          ),
+          selection,
         }));
       })
     );
