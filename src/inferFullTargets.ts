@@ -269,6 +269,8 @@ export function inferSingleNonListTarget(
       );
       return {
         type: "range",
+        excludeStart: !!target.excludeStart,
+        excludeEnd: !!target.excludeEnd,
         start,
         end: inferRangeEndTarget(
           context,

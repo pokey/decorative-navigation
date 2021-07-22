@@ -117,6 +117,8 @@ export interface PartialRangeTarget {
   type: "range";
   start: PartialPrimitiveTarget;
   end: PartialPrimitiveTarget;
+  excludeStart?: boolean;
+  excludeEnd?: boolean;
 }
 
 export interface PartialListTarget {
@@ -142,6 +144,8 @@ export interface RangeTarget {
   type: "range";
   start: PrimitiveTarget;
   end: PrimitiveTarget;
+  excludeStart: boolean;
+  excludeEnd: boolean;
 }
 
 export interface ListTarget {
